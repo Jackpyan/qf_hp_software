@@ -687,8 +687,8 @@ void UI::page3_key(ec11_task_result_type ec_type, int16_t ec_value) // 界面3�
             user_datas.adc_hotbed_max_temp += ec_value;
             if (user_datas.adc_hotbed_max_temp < 240)
                 user_datas.adc_hotbed_max_temp = 240;
-            else if (user_datas.adc_hotbed_max_temp > 300)
-                user_datas.adc_hotbed_max_temp = 300;
+            else if (user_datas.adc_hotbed_max_temp > 350)
+                user_datas.adc_hotbed_max_temp = 350;
         }
         break;
         case 2:
