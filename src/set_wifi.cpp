@@ -62,10 +62,9 @@ bool set_wifi::power_on_conect()
   for (x = 32; x > 7; x--)
   {
     oled.choose_clr(8, 0, 120, 4);
-    oled.str(12, x, conect_wifi[user_datas.ui_style], 16, 1, 0);
+    oled.str(12, x - 25, conect_wifi[user_datas.ui_style], 16, 1, 0);
     if (buf)
     {
-
       if (user_datas.ui_style == UI_STYLE_ZHAOYANG)
       {
         oled.str(24, x, "AT", 16, 1, 1);

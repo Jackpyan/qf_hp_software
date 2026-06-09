@@ -2,6 +2,7 @@
 #include "User.h"
 #include "uart_cmd.h"
 #include "eeprom_flash.h"
+#include "pwm.h"
 
 extern float kpv, kiv, kdv, kiv_high;
 extern void get_mac(uint8_t *mac_ret);
@@ -64,7 +65,6 @@ void uart_app_handler()
 {
     if (uart_cmd_available())
     {
-        uint8_t buf[64];
         /// cmd
         if (uart_cmd_cmp("reset", 5))
         {
@@ -109,8 +109,54 @@ void uart_app_handler()
             kdv = get_num_f((const char *)&buffer[1]);
             Serial.printf("SET KD:%f\n", kdv);
         }
+        else if (uart_cmd_cmp("get_version", sizeof("get_version") - 1))
+        {
+            Serial.printf("Version:%s\n", HP_SOFTWARE_VERSION);
+        }
+        else if (uart_cmd_cmp("save_pid", sizeof("save_pid") - 1))
+        {
+            user_datas.kp = kpv;
+            user_datas.ki = kiv;
+            user_datas.kd = kdv;
+            user_datas.kih = kiv_high;
+            eeprom.write_flg = 2;
+            eeprom.write_task();
+        }
+        else if (uart_cmd_cmp("set_mode", sizeof("set_mode") - 1))
+        {
+            if (user_datas.pwm_temp_mode == 0)
+            {
+                user_datas.pwm_temp_mode = 1;
+                ui.temp_mode_flg = 1;
+                if (pwm.power)
+                {
+                    pwm.end();
+                    eeprom.write_flg = 1;
+                    eeprom.write_t = 0;
+                }
+                ui.oled_display_set();
+            }
+        }
+        else if (uart_cmd_cmp("heat_on", sizeof("heat_on") - 1))
+        {
+            if (!pwm.power)
+            {
+                pwm.begin();
+                ui.oled_display_set();
+            }
+        }
+        else if (uart_cmd_cmp("heat_off", sizeof("heat_off") - 1))
+        {
+            if (pwm.power)
+            {
+                pwm.end();
+                ui.oled_display_set();
+            }
+        }
         else if (uart_cmd_cmp("get_pid", 7))
         {
+            extern void PWM_PID_SYNC();
+            PWM_PID_SYNC();
             Serial.printf("KP:%f\n", kpv);
             Serial.printf("KI:%f\n", kiv);
             Serial.printf("KI HIGH:%f\n", kiv_high);
