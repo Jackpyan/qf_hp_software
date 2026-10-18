@@ -131,7 +131,7 @@ void PWM::temp_set()
             else if (pwm_buf_f < -50)
                 pwm_buf_f = -50;
         }
-        if (adc.now_temp < 200)
+        if (adc.now_temp < 250)
             pwm_buf = kpv * (ek[0] + kiv * pwm_buf_f + kdv * (ek[0] - ek[1]));
         else
             pwm_buf = kpv * (ek[0] + kiv_high * pwm_buf_f + kdv * (ek[0] - ek[1]));
@@ -148,14 +148,29 @@ void PWM::temp_set()
                 pwm_buf /= 8;
             }
             else
-                pwm_buf /= 3;
+            {
+                // 高温区（>=200°）误差<4度时，改为除以2，避免接近目标温度时输出被过度压低
+                pwm_buf /= 2;
+            }
 
             if (ek[0] > -1)
-                pwm_buf += need_set_temp / 10;
+                pwm_buf += need_set_temp / 20; // 偏移补偿从10改为20，减小突跳
         }
-        if (ek[0] < 0 && pwm_buf > 0)
+        if (ek[0] < 0)
         {
-            pwm_buf = 0;
+            // 温度超过目标值时，不再立即断电，而是按过冲程度逐渐降低占空比
+            float over_temp = -ek[0]; // 超过目标温度的幅度（正值）
+            if (over_temp >= 4.0f)    // 超过 4 度才完全断电
+            {
+                pwm_buf = 0;
+            }
+            else
+            {
+                // 在 0~4 度过冲区间内，线性衰减占空比，给系统平滑过渡
+                pwm_buf = (int16_t)(pwm_buf * (1.0f - over_temp / 4.0f));
+                if (pwm_buf < 0)
+                    pwm_buf = 0;
+            }
         }
     }
 
